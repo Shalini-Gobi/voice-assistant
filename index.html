@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Assistant</title>
+    <style>
+        body {
+            background-color: #333333; /* metallic black background */
+            color: white; /* text color */
+            display: flex;
+            flex-direction: column; /* stack elements vertically */
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        h1, p {
+            text-align: center;
+        }
+        button {
+            background-color: red; /* red button color */
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 20px; /* add some space between h1 and button */
+        }
+    </style>
+</head>
+<body>
+    <h1>Voice Assistant</h1>
+    <button onclick="startRecording()">Start Recording</button>
+    <p id="result"></p>
+    <script>
+        function startRecording() {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                const mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.start();
+                const audioChunks = [];
+                mediaRecorder.addEventListener("dataavailable", event => {
+                    audioChunks.push(event.data);
+                });
+                mediaRecorder.addEventListener("stop", () => {
+                    const audioBlob = new Blob(audioChunks);
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const formData = new FormData();
+                    formData.append('audio_data', audioBlob, 'audio.wav');
+                    fetch('/speech-to-text', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('result').innerText = data.text;
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+                });
+                setTimeout(() => {
+                    mediaRecorder.stop();
+                }, 5000); // Recording for 5 seconds
+            })
+            .catch(console.error);
+        }
+    </script>
+</body>
+</html>
